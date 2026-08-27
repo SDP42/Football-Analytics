@@ -164,6 +164,46 @@ and available columns changed in 2026.
 
 ---
 
+## Source: understat (secondary — recent PL & La Liga shot data)
+
+Collected under the [responsible-collection contract](decisions.md) (#0016).
+Fields below are **expected** and must be `⟨verify⟩`-checked against a real
+response (understat serves data as JSON embedded in the page / via internal
+endpoints; `soccerdata` normalises it to DataFrames).
+
+### Entity: Shot (understat)
+
+| Field | Type | Description | Verify |
+|---|---|---|---|
+| id | int | understat shot id | ⟨verify⟩ |
+| match_id | int | understat match id | ⟨verify⟩ |
+| minute | int | match minute | ⟨verify⟩ |
+| player / player_id | str / int | shooter (understat ids — not StatsBomb) | ⟨verify⟩ |
+| team / h_a | str | shooter's team; whether home or away | ⟨verify⟩ |
+| X, Y | float | shot location, **normalised 0–1** of pitch length/width (NOT 120×80 like StatsBomb — needs rescaling) | ⟨verify⟩ |
+| xG | float | understat's expected-goals value | ⟨verify⟩ |
+| result | str | Goal / SavedShot / MissedShots / BlockedShot / ShotOnPost / OwnGoal | ⟨verify⟩ |
+| situation | str | OpenPlay / FromCorner / SetPiece / DirectFreekick / Penalty | ⟨verify⟩ |
+| shotType | str | RightFoot / LeftFoot / Head / OtherBodyPart | ⟨verify⟩ |
+| lastAction | str | action immediately before the shot (Pass, Cross, ...) | ⟨verify⟩ |
+| season / league | str | e.g. "2023", "EPL" / "La_liga" | ⟨verify⟩ |
+| date | datetime | kickoff | ⟨verify⟩ |
+
+### Entity: Match-level rollup (understat)
+
+| Field | Type | Description | Verify |
+|---|---|---|---|
+| xG (home/away) | float | team xG totals | ⟨verify⟩ |
+| PPDA | float | passes allowed per defensive action (pressing intensity) | ⟨verify⟩ |
+| deep | int | passes/completions near the box | ⟨verify⟩ |
+| xpts | float | expected points | ⟨verify⟩ |
+
+**Integration note:** understat X,Y are fractions of the pitch → multiply by
+(120, 80) to match StatsBomb's frame before combining shot models. Player/team
+names differ from StatsBomb and football-data.co.uk → entity resolution applies.
+
+---
+
 ## Cross-source key map (for entity resolution)
 
 | Concept | StatsBomb | football-data.co.uk | FBref |

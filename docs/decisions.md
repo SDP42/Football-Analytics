@@ -331,15 +331,89 @@ Consequences:
 
 ---
 
+### 0016 — Adopt understat (shot + xG data) with a responsible-collection contract
+Date: 2026-08-27
+Status: accepted
+Decision: understat shot-level data (x/y, xG, situation, body part, minute) +
+per-match xG/PPDA + player/team aggregates is adopted as a **secondary source**
+for recent-season shot analysis (Premier League and La Liga first; other Big-5
+optional). It fills the gap that StatsBomb Open Data leaves for recent PL / La
+Liga. It provides **shots only** — no passes, carries, or pressures.
+
+Why now: owner approved (was pending decision P7). It is the only realistic way
+to get recent Premier League / La Liga event-type data without a paid licence or
+the WhoScored ToS violation we declined in 0015.
+
+**Responsible-collection contract (binding — the scraper MUST follow all of
+these):**
+
+1. **History from the mirror, not the site.** Backfill seasons 2014/15 →
+   last-completed season from the **Kaggle understat mirror**
+   (`codytipton/understat-data` or equivalent). Only hit understat.com directly
+   for the **current, still-changing season**. Completed seasons are immutable —
+   fetch once, ever.
+2. **One request at a time.** No concurrency, no thread pools. Minimum **3
+   seconds** between requests (`time.sleep`), jittered.
+3. **Cache-first, immutable raw store.** Every response written verbatim to
+   `data/raw/understat/` (git-ignored) with a manifest row `(url, utc_timestamp,
+   http_status, sha256)`. Re-runs read cache; a URL is fetched **at most once**
+   unless it is the live season.
+4. **Honest identification.** Real `User-Agent` naming the project + a contact
+   URL/email. No rotating fake browser strings, no proxies to evade blocks.
+5. **Fetch only the agreed scope.** A config list of `(league, season)` pairs.
+   Never crawl the whole site or follow arbitrary links.
+6. **Back off and stop.** Exponential backoff on 429/5xx; after 3 consecutive
+   failures, abort the run and log — do not hammer.
+7. **robots.txt respected.** Check it in code; if it disallows a path, we do not
+   fetch that path.
+8. **Off-peak bulk runs.** Any large backfill scheduled for low-traffic hours.
+9. **No redistribution of raw data.** `.gitignore` already blocks it. We publish
+   only derived models / aggregated figures, and only where compatible.
+10. **Attribution.** "Shot data via understat" (and Opta as the ultimate source)
+    on any output that uses it.
+
+Prefer implementing via the `soccerdata` library's `Understat` reader (it already
+caches locally and is maintained) over a hand-rolled scraper, unless it proves
+inflexible. Decide at implementation time; either way the contract above holds.
+
+Alternatives considered: hand-rolled `requests` + BeautifulSoup (more control,
+more ways to be a bad citizen); `understatapi` package (thin, less caching);
+WhoScored (richer but ToS-forbidden, 0015); do nothing (leave recent PL/La Liga
+uncovered).
+
+Consequences:
+- Recent PL / La Liga get: xG models, shot maps, finishing/over-performance
+  profiles, chance-quality team metrics. **Not** passing networks or pressing.
+- New optional dependency: `soccerdata` (and/or `beautifulsoup4`), justified when
+  first imported.
+- A small `data/raw/understat/manifest.csv` becomes part of data lineage.
+- If understat blocks us despite the contract, we stop and fall back to the
+  Kaggle mirror only.
+
+---
+
+### 0017 — Defer Indian Super League
+Date: 2026-08-27
+Status: accepted
+Decision: Drop ISL from the active scope. The StatsBomb ISL 2021/22 event season
+is **not** ingested for now; no ISL match-prediction source is pursued.
+Why: owner decision. ISL is a single isolated event-season with no continuous
+results/odds source (football-data.co.uk excludes India), so it adds
+integration + entity-resolution work for little analytical payoff at this stage.
+Supersedes the ISL parts of 0013; removes pending decision P6.
+Consequences: competition set is now La Liga (spine) + Premier League 2015/16 +
+Bundesliga (2015/16 and/or 2023/24) + Ligue 1 2021/22 & 2022/23, plus
+football-data.co.uk / ClubElo / FPL for recent seasons, plus understat shots
+(0016). ISL can be revisited later as a self-contained mini-study.
+
+---
+
 ## Pending decisions (to resolve with the owner)
 
 - **P3 (partly open)** — Exact La Liga season range to ingest first (all
   2004/05–2020/21, or a recent subset e.g. 2015/16–2020/21 to start smaller?).
 - **P5** — Experiment tracking tool when the time comes: MLflow (local, simple)
   vs Weights & Biases (hosted, nicer UI, account needed).
-- **P6** — Do we want ISL match prediction later? If yes, we need to find an ISL
-  results source (football-data.co.uk does not cover India).
-- **P7** — Do we accept scraping **understat** (no licence, cache-only) to get
-  recent (2014/15→now) shot + xG data for PL / La Liga / Bundesliga / Serie A /
-  Ligue 1? Enables recent xG models and shot maps; not passing networks. See
-  0014.
+
+Resolved: **P6** deferred → 0017 (ISL dropped for now). **P7** approved → 0016
+(understat adopted with a responsible-collection contract).

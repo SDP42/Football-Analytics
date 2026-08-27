@@ -19,7 +19,8 @@ be recorded in [decisions.md](decisions.md).
 
 | ID | Requirement | Acceptance criteria |
 |----|-------------|---------------------|
-| F1 | Download StatsBomb Open Data for the agreed competition set (La Liga 2004/05–2020/21 spine + Indian Super League 2021/22 + Premier League 2015/16 + one season each of Bundesliga / Ligue 1 / Serie A — see [decisions.md #0013](decisions.md)) | Script is idempotent; re-running does not re-download; raw files land in `data/raw/statsbomb/` |
+| F1 | Download StatsBomb Open Data for the agreed competition set: La Liga spine (season range = pending P3) + Premier League 2015/16 + Bundesliga (2015/16 and/or 2023/24) + Ligue 1 2021/22 & 2022/23. **ISL dropped** ([decisions.md #0017](decisions.md)). | Script is idempotent; re-running does not re-download; raw files land in `data/raw/statsbomb/` |
+| F1b | Collect understat shot + xG data for recent PL & La Liga per the responsible-collection contract ([decisions.md #0016](decisions.md)): Kaggle mirror for completed seasons, direct fetch only for the live season, ≥3s between requests, immutable cache + manifest | No URL fetched twice (except live season); `data/raw/understat/manifest.csv` present; run aborts cleanly on repeated HTTP errors |
 | F2 | Validate raw data | Schema + row-count + null checks; failures are loud, not silent |
 | F3 | Parse events into tidy tables (matches, players, events, shots, passes) | Stored as Parquet in `data/processed/`; documented in `data_dictionary.md` |
 | F4 | EDA notebook | Distributions, missingness, sanity checks (e.g. shots inside the pitch) |
@@ -39,7 +40,7 @@ be recorded in [decisions.md](decisions.md).
 | F13 | Scouting query interface (filter + rank) |
 | F14 | Multi-competition ingestion |
 | F15 | Cross-source entity resolution (team & player name/ID matching) |
-| F16 | Secondary datasets integrated (`football-data.co.uk` results, FBref historical basic stats) |
+| F16 | Secondary datasets integrated (`football-data.co.uk` results + odds, ClubElo strength, openfootball results, FBref historical basic stats) |
 | F17 | FastAPI service exposing analytics endpoints |
 | F18 | Minimal dashboard (Streamlit or plain HTML) |
 | F19 | Experiment tracking |

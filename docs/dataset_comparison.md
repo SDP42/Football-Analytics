@@ -85,6 +85,13 @@ SECONDARY:   football-data.co.uk        (match results + bookmaker odds history)
              - powers: historical context, squad minutes, older seasons
              - DO NOT depend on advanced (Opta) columns - removed Jan 2026
 
+             understat (shot + xG, recent PL & La Liga)   [ADOPTED - decisions.md #0016]
+             - powers: recent-season xG models, shot maps, finishing profiles
+             - SHOTS ONLY - no passes/carries/pressures
+             - collected under a binding responsible-collection contract:
+               Kaggle mirror for completed seasons, direct fetch only for the
+               live season, >=3s/request, immutable cache + manifest, honest UA
+
 ADD (free, clean licence - see decisions.md #0015):
              StatsBomb recent seasons        - Bundesliga 2023/24 (+360),
                                                Ligue 1 2021/22 & 2022/23 (+360)
@@ -98,8 +105,6 @@ ADD (free, clean licence - see decisions.md #0015):
 
 OPTIONAL:    Wyscout public dataset (CC-BY)  - commercial-safe event fallback,
                                                extra leagues (2017/18)
-             understat (scrape, cache-only)  - recent shot/xG history (PL, La Liga)
-                                               IF owner approves P7 (grey licence)
              transfermarkt mirror (Kaggle)   - market value / age / injuries for
                                                scouting metadata (Phase 2)
              Kaggle European Soccer DB       - extra 2008-2016 match-prediction data
@@ -128,8 +133,10 @@ CV (Phase 4): SoccerNet          - detection, tracking, calibration, action spot
 ### What we will NOT do
 
 - Not download SoccerNet now.
-- Not scrape FBref/understat until a feature demands it and we have a caching +
-  rate-limit plan.
+- Not scrape FBref until a feature demands it. understat **is** adopted (#0016)
+  but only via the responsible-collection contract (mirror-first, cache-first,
+  ≥3s/request).
+- Not scrape WhoScored at all (#0015 — ToS forbids it).
 - Not merge StatsBomb and football-data.co.uk into one table blindly — they join
   only at the (competition, season, date, home, away) level and need entity
   resolution (see [architecture.md](architecture.md#entity-resolution) and
@@ -140,16 +147,17 @@ CV (Phase 4): SoccerNet          - detection, tracking, calibration, action spot
 1. **Non-commercial** — confirmed. StatsBomb stays primary.
 2. **Men's football only** — confirmed.
 3. **Competitions** — owner requested Premier League + Indian Super League +
-   La Liga + European big leagues. Reality check against StatsBomb Open Data:
+   La Liga + European big leagues. Final plan after reality-check + follow-ups
+   ([decisions.md #0013, #0015, #0016, #0017](decisions.md)):
 
-   | League requested | StatsBomb Open Data reality | Plan |
-   |---|---|---|
-   | La Liga | **2004/05–2020/21** (deep!) + 360 for 2020/21 | **Spine of player analytics** |
-   | Premier League | only **2015/16** and 2003/04 | ingest 2015/16 snapshot |
-   | Indian Super League | only **2021/22** | ingest 2021/22 snapshot |
-   | Bundesliga / Ligue 1 / Serie A | 1–2 single seasons each (Ligue 1 2021/22 & 2022/23 have 360) | ingest one season each |
+   | League | StatsBomb event data | Recent-season data | Plan |
+   |---|---|---|---|
+   | La Liga | **2004/05–2020/21** (deep) + 360 for 2020/21 | understat shots 2021→now; ClubElo; football-data.co.uk | **Spine of player analytics** |
+   | Premier League | only **2015/16** | FPL API (player form); understat shots; ClubElo; football-data.co.uk | 2015/16 event deep-dive + recent via understat/FPL |
+   | Bundesliga | 2015/16 **and 2023/24 (+360)** | football-data.co.uk; ClubElo | ingest both seasons |
+   | Ligue 1 | **2021/22 & 2022/23 (+360)** | football-data.co.uk; ClubElo | ingest both |
+   | Serie A | 2015/16 | football-data.co.uk; ClubElo | optional single-season |
+   | **Indian Super League** | 2021/22 only | none (football-data.co.uk excludes India) | **DROPPED for now (#0017)** |
 
-   For **continuous multi-season match prediction** across PL / La Liga /
-   Bundesliga / Serie A / Ligue 1 we use **football-data.co.uk** (full history).
-   **ISL is not in football-data.co.uk** — ISL match prediction is deferred until
-   we find a results source. Full rationale: [decisions.md #0013](decisions.md).
+   Match prediction across PL / La Liga / Bundesliga / Serie A / Ligue 1 →
+   football-data.co.uk + ClubElo, full continuous history.

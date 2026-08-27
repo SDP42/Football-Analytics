@@ -222,7 +222,7 @@ than rely on a scraped source.
 | **Fantasy Premier League API** | fantasy.premierleague.com/api/ | Public JSON, no key | Live PL player points, prices, ownership, fixtures. Great for a **fantasy side-module**; not core. |
 | **Football-Data.org API** | football-data.org | Free tier (rate-limited, needs key) | Fixtures, results, standings, some lineups for major comps. Handy for keeping results current; free tier is limited. |
 | **API-Football (RapidAPI)** | api-sports.io | Freemium (key, quota) | Broad coverage incl. lineups, events, stats. Free tier small; ToS restrict redistribution. Possible later. |
-| **understat** | understat.com (scrape via `understatapi`) | No open license; scrape | Shot-level data + xG for top-5 leagues since 2014. **Fills StatsBomb's biggest gap (continuous shot history)** but is a scrape with no license — use cautiously, cache, don't redistribute. |
+| **understat** | understat.com (via `soccerdata` / Kaggle mirror) | No open license; scrape | Shot-level data + xG, Big-5 + RPL, 2014/15→now. **ADOPTED** as secondary (#0016) under a responsible-collection contract — see §6b. Fills the recent-PL/La-Liga shot-data gap. Shots only. |
 | **Opta / StatsBomb IQ / Wyscout (paid)** | — | Commercial subscription | Out of scope (cost + license). |
 | **transfermarkt** | transfermarkt scrape / Kaggle mirrors | Scrape; ToS restrict | Market values, transfers, injuries, ages. Useful metadata for scouting; use a Kaggle mirror and attribute. Optional Phase 2. |
 
@@ -248,7 +248,7 @@ use:
 
 | Source | What / coverage | Licence reality | Verdict |
 |---|---|---|---|
-| **understat** (via `soccerdata` or `understatapi`) | **Shot-level** data: x/y, xG, situation, body part; Big-5 + Russian PL; **2014/15 → 2024/25**; plus per-match xG/PPDA and player/team aggregates | No licence. Site ToS discourage scraping. Data ultimately Opta-derived. | **Conditional (owner decision P7).** Cache-only, never redistribute the raw scrape, polite rate limit, attribute. Gives recent xG + shot maps + finishing profiles for PL & La Liga. **Shots only — no passes/carries/pressures.** |
+| **understat** (via `soccerdata` or Kaggle mirror) | **Shot-level** data: x/y, xG, situation, body part, minute; Big-5 + Russian PL; **2014/15 → current**; plus per-match xG/PPDA and player/team aggregates | No licence. Site ToS discourage scraping. Data ultimately Opta-derived. | **ADOPTED (#0016).** Owner approved P7. Bound by the responsible-collection contract: **Kaggle mirror for completed seasons, direct understat.com only for the live season**, ≥3s between requests, single-threaded, immutable cache + manifest, honest User-Agent, robots.txt respected, no raw redistribution, attribute understat/Opta. Gives recent xG + shot maps + finishing profiles for PL & La Liga. **Shots only — no passes/carries/pressures.** |
 | **WhoScored** (via `soccerdata`, `whoscraped`, or custom) | **Full Opta event stream** — passes, touches, tackles, shots, all with locations; convertible to SPADL; Big-5 + ~15 leagues; recent seasons incl. **2024/25** | **WhoScored ToS explicitly prohibit scraping**; data is Opta-licensed; redistribution is a clear violation. Widely used in academia/hobby but the **highest legal risk** here. | **Not recommended.** Only path to recent *full* event data for free, but the licence position is bad. If ever used: private, non-commercial, no redistribution, and documented as a known risk. Prefer to **not build a public portfolio piece on this.** |
 | **Sofascore** (via `soccerdata`) | Match stats, lineups, player ratings, momentum graph, some incidents | Scrape; ToS restrict; rate-limited hard | **Optional, low priority.** Useful for lineups / ratings, not a core event source. |
 | **FBref match logs** (via `soccerdata`) | Per-match basic team/player logs, basic shooting | Scrape; post-Jan-2026 **basic only** | **Optional.** Historical context; no advanced metrics anymore (see §2). |
@@ -271,6 +271,9 @@ Already covered in §4 and [cv_strategy.md](cv_strategy.md).
 
 - **"Recent European big-league" event data** → partly solved for free & clean:
   StatsBomb has **Bundesliga 2023/24** and **Ligue 1 2021/22–2022/23** with 360.
+- **UPDATE (owner decisions):** understat is now **adopted** (#0016) for recent
+  PL & La Liga shot data via a responsible-collection contract; **ISL is dropped**
+  (#0017).
 - **Recent Premier League** → best licence-clean option is the **FPL API**
   (rich per-player form, not events) + **football-data.co.uk / ClubElo** (results
   + strength). Full event data only via understat (shots, grey) or WhoScored
@@ -291,7 +294,10 @@ Already covered in §4 and [cv_strategy.md](cv_strategy.md).
 | FBref | No | Expected | No | Basic historical context only |
 | SoccerNet | No | Cite papers | **No (NDA)** | CV research spike only |
 | Metrica / SkillCorner / IDSSE | Research / NC | Cite | Mostly yes | Teaching sets for tracking methods |
-| understat | None (scrape) | Courtesy | No | Optional gap-fill, cache only |
+| understat | None (scrape) | Courtesy (understat + Opta) | No | **Adopted (#0016)** — recent PL/La Liga shots, responsible-collection contract, cache only |
+| ClubElo | Non-commercial + attribution | Yes | Yes (small) | Adopted — team-strength feature |
+| openfootball / football.db | **Public domain (CC0)** | Courtesy | Yes | Adopted — results/fixtures backup |
+| FPL API | Free, unofficial | Courtesy | Derived only | Adopted — recent PL player-form module |
 
 **Because our project is a non-commercial student/portfolio project, StatsBomb's
 license is acceptable.** If the project ever needs to be commercial, the path is:
