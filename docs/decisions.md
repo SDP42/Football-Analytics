@@ -239,6 +239,57 @@ Consequences:
 
 ---
 
+### 0014 — Why "last 5 seasons" is possible for match data but not for event data
+Date: 2026-08-27
+Status: accepted
+Question from owner: "Why can't we take the last 5 Premier League seasons (and
+the other leagues) instead of 2 fixed seasons?"
+
+Decision: We split coverage by **data layer**, because the free/legal supply is
+completely different for each:
+
+| Layer | Powers | Free + legal supply | Last-5 PL seasons available free? |
+|---|---|---|---|
+| **Event data** (passes, carries, pressures, shot freeze-frames, locations) | passing networks, deep player style, tactical analysis, freeze-frame xG | StatsBomb Open Data — a **fixed, curated donation**, not a feed | **No.** PL = 2015/16 + 2003/04 only |
+| **Shot data** (shot location + xG, no other events) | xG models, shot maps, finishing profiles | understat (scrape, **no licence**), top-5 leagues 2014/15→now | Yes, but licence-grey and shots only |
+| **Match data** (result, goals, basic counts, pre-match odds) | match prediction, team form, odds baseline | football-data.co.uk — full history | **Yes**, 1993→now |
+| **Season aggregates** (basic) | career/season context, squad minutes | FBref — 100+ comps, deep history (basic only post-Jan-2026) | Yes (basic only) |
+
+**Why StatsBomb doesn't give recent PL events for free:** that exact data is
+their commercial product (StatsBomb IQ). The open-data repo is a one-off goodwill
+release — mostly La Liga (the Messi years), World Cups, women's football, and a
+handful of single league-seasons. It is not a rolling feed and will not grow to
+cover recent PL. We cannot change that.
+
+**What we can do for "last 5 seasons" of PL / La Liga / Bundesliga / Serie A /
+Ligue 1:**
+- Match prediction + team form + odds baseline → football-data.co.uk, all five
+  leagues, last 5+ seasons. **Yes, do this** (already SECONDARY in the stack).
+- Recent xG / shot analysis / finishing profiles → understat scrape. **Optional,
+  owner must accept the licence grey area** (cache only, never redistribute,
+  polite rate limit). Tracked as P7 below.
+- Full event-level tactical analysis for recent PL → only via **paid data**
+  (StatsBomb IQ / Opta / Wyscout, thousands of £/yr). **Out of scope** (0002).
+
+Alternatives considered:
+- Pay for a data licence — rejected: cost, and non-commercial project.
+- Scrape WhoScored / Opta-backed sites for full events — rejected: direct ToS
+  violation and redistribution risk; brittle.
+- Drop the deep-analytics ambition and do match prediction only — rejected:
+  that's the generic beginner project we explicitly aren't building (see
+  project_vision.md §C).
+
+Consequences:
+- **La Liga stays the event-analytics spine** — it is the only league where free
+  event data covers many consecutive recent-ish seasons (2004/05–2020/21).
+- Premier League / Bundesliga / Serie A / Ligue 1 get: 1 StatsBomb event-season
+  each (a "deep dive" sample) **plus** full football-data.co.uk history for
+  prediction/form. That is the realistic meaning of "include these leagues".
+- If owner approves understat (P7), recent PL/other-league xG and shot maps
+  become possible; passing networks and pressing metrics still will not.
+
+---
+
 ## Pending decisions (to resolve with the owner)
 
 - **P3 (partly open)** — Exact La Liga season range to ingest first (all
@@ -247,3 +298,7 @@ Consequences:
   vs Weights & Biases (hosted, nicer UI, account needed).
 - **P6** — Do we want ISL match prediction later? If yes, we need to find an ISL
   results source (football-data.co.uk does not cover India).
+- **P7** — Do we accept scraping **understat** (no licence, cache-only) to get
+  recent (2014/15→now) shot + xG data for PL / La Liga / Bundesliga / Serie A /
+  Ligue 1? Enables recent xG models and shot maps; not passing networks. See
+  0014.
