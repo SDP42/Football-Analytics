@@ -331,9 +331,45 @@ Consequences:
 
 ---
 
-### 0016 — Adopt understat (shot + xG data) with a responsible-collection contract
+### 0016 — understat: approved in principle, then BLOCKED by robots.txt
 Date: 2026-08-27
-Status: accepted
+Status: accepted (with a hard block on direct scraping)
+
+**2026-08-27 update — direct scraping will NOT happen.** On first run the
+ingestion script checked `https://understat.com/robots.txt` and found:
+
+    User-agent: *
+    Disallow: /
+
+understat disallows *all* automated access to the *entire* site. Our own
+responsible-collection contract (rule 7) says we honour robots.txt, so the
+fetcher refused every URL and aborted. **This is the contract working as
+intended.** We do not scrape understat.
+
+Remaining ways to get recent shot/xG data, in preference order:
+  1. **Do without it.** Recent PL player-form comes from the FPL data (0015);
+     recent team strength from ClubElo; results/odds from football-data.co.uk.
+     Deep shot-level analytics stay limited to StatsBomb's covered seasons.
+     **This is the default.**
+  2. **Kaggle mirror** (`codytipton/understat-data` etc.) — a third party has
+     already scraped and re-published understat data on Kaggle. Downloading a
+     Kaggle dataset does not touch understat's servers and is not blocked by
+     their robots.txt, but the mirror's *own* right to redistribute is unclear.
+     Only pursue if the owner sets up Kaggle credentials and accepts that
+     caveat. Treated as OPTIONAL, owner-driven.
+  3. Paid licence — out of scope (0002).
+
+Consequence: **"recent Premier League / La Liga shot-level data" is a documented
+gap**, not a solved item. xG modelling in the MVP uses StatsBomb shots (which
+include StatsBomb's own xG for benchmarking) on the covered seasons.
+
+--- original decision (kept for the record) ---
+
+Decision: understat shot-level data (x/y, xG, situation, body part, minute) +
+per-match xG/PPDA + player/team aggregates is adopted as a **secondary source**
+for recent-season shot analysis (Premier League and La Liga first; other Big-5
+optional). It fills the gap that StatsBomb Open Data leaves for recent PL / La
+Liga. It provides **shots only** — no passes, carries, or pressures.
 Decision: understat shot-level data (x/y, xG, situation, body part, minute) +
 per-match xG/PPDA + player/team aggregates is adopted as a **secondary source**
 for recent-season shot analysis (Premier League and La Liga first; other Big-5
@@ -352,6 +388,11 @@ these):**
    (`codytipton/understat-data` or equivalent). Only hit understat.com directly
    for the **current, still-changing season**. Completed seasons are immutable —
    fetch once, ever.
+   **Mirror-unavailable fallback (added 2026-08-27):** if the Kaggle mirror
+   cannot be reached (e.g. no Kaggle API credentials configured), a **one-time
+   direct fetch of one index page per (league, season)** is permitted — this is
+   ~a dozen requests total, cached permanently, and never repeated. It is not a
+   crawl. Per-match deep pages still wait for the mirror or explicit approval.
 2. **One request at a time.** No concurrency, no thread pools. Minimum **3
    seconds** between requests (`time.sleep`), jittered.
 3. **Cache-first, immutable raw store.** Every response written verbatim to

@@ -1,0 +1,34 @@
+# StatsBomb Open Data competitions we ingest (see docs/decisions.md #0013, #0015, #0017).
+# competition_id / season_id come from competitions.json.
+# "all_seasons: true" ingests every available season for that competition_id.
+#
+# Men's football only. La Liga is the analytics spine.
+
+statsbomb:
+  competitions:
+    - name: "La Liga"
+      competition_id: 11
+      all_seasons: true          # Barcelona-centric history 2004/05-2020/21 + full 2015/16
+
+    - name: "Premier League"
+      competition_id: 2
+      seasons: ["2015/2016"]     # full season (380 matches)
+
+    - name: "1. Bundesliga"
+      competition_id: 9
+      seasons: ["2015/2016", "2023/2024"]   # 2023/24 has 360 data
+
+    - name: "Ligue 1"
+      competition_id: 7
+      seasons: ["2021/2022", "2022/2023"]   # both have 360 data
+
+    - name: "Serie A"
+      competition_id: 12
+      seasons: ["2015/2016"]     # full season (380 matches)
+
+  # 360 freeze-frame files are large. Fetch them only for these comp-seasons.
+  fetch_360_for:
+    - {competition_id: 9,  season_name: "2023/2024"}
+    - {competition_id: 7,  season_name: "2021/2022"}
+    - {competition_id: 7,  season_name: "2022/2023"}
+    - {competition_id: 11, season_name: "2020/2021"}
