@@ -39,6 +39,19 @@ def tree_stats(root: Path) -> tuple[int, int]:
     return len(files), sum(p.stat().st_size for p in files)
 
 
+def read_csv_any(path: Path, **kw) -> pd.DataFrame:
+    """pandas.read_csv that transparently handles a .gz-compressed raw file."""
+    return pd.read_csv(io.BytesIO(read_maybe_gz(path)), **kw)
+
+
+def glob_any(folder: Path, stem_suffix: str) -> list[Path]:
+    """Match files ending in `stem_suffix` OR `stem_suffix + '.gz'`."""
+    if not folder.exists():
+        return []
+    return sorted(p for p in folder.glob("*")
+                  if p.name.endswith(stem_suffix) or p.name.endswith(stem_suffix + ".gz"))
+
+
 def statsbomb_detail() -> list[str]:
     d = RAW / "statsbomb"
     if not d.exists():
@@ -79,11 +92,11 @@ def football_data_detail() -> list[str]:
              "I1": "Serie A", "F1": "Ligue 1"}
     lines = ["| Division | Seasons | Total matches (rows) |", "|---|--:|--:|"]
     for div in sorted(names):
-        csvs = sorted((d / div).glob("*.csv"))
+        csvs = glob_any(d / div, ".csv")
         rows = 0
         for c in csvs:
             try:
-                rows += len(pd.read_csv(c, encoding="latin-1", on_bad_lines="skip"))
+                rows += len(read_csv_any(c, encoding="latin-1", on_bad_lines="skip"))
             except Exception:
                 pass
         lines.append(f"| {names[div]} ({div}) | {len(csvs)} | {rows} |")
@@ -94,11 +107,12 @@ def clubelo_detail() -> list[str]:
     d = RAW / "clubelo" / "snapshots"
     if not d.exists():
         return ["_not collected_"]
-    snaps = sorted(d.glob("*.csv"))
+    snaps = glob_any(d, ".csv")
     if not snaps:
         return ["_no snapshots_"]
-    sample = pd.read_csv(snaps[-1])
-    return [f"- {len(snaps)} monthly snapshots, {snaps[0].stem} → {snaps[-1].stem}",
+    sample = read_csv_any(snaps[-1])
+    span = f"{snaps[0].name.split('.')[0]} → {snaps[-1].name.split('.')[0]}"
+    return [f"- {len(snaps)} monthly snapshots, {span}",
             f"- latest snapshot lists {len(sample)} clubs, columns: {', '.join(sample.columns)}"]
 
 
@@ -107,12 +121,12 @@ def fpl_detail() -> list[str]:
     if not d.exists():
         return ["_not collected_"]
     lines = []
-    boot = d / "current" / "bootstrap_static.json"
-    if boot.exists():
-        b = json.loads(boot.read_bytes())
+    boot = glob_any(d / "current", "bootstrap_static.json")
+    if boot:
+        b = json.loads(read_maybe_gz(boot[0]))
         lines.append(f"- current season: {len(b['elements'])} players, "
                      f"{len(b['teams'])} teams, {len(b['events'])} gameweeks")
-    es = list((d / "current" / "element_summary").glob("*.json")) if (d / "current" / "element_summary").exists() else []
+    es = glob_any(d / "current" / "element_summary", ".json")
     lines.append(f"- per-player history files: {len(es)}")
     arch = sorted((d / "archive").glob("*")) if (d / "archive").exists() else []
     lines.append(f"- historical archive seasons: {len(arch)} ({', '.join(p.name for p in arch)})")
