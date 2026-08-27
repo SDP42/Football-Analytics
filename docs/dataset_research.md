@@ -228,6 +228,59 @@ than rely on a scraped source.
 
 ---
 
+## 6. Options for recent-season data — closing the "PL / La Liga 2021+" gap
+
+Researched 2026-08-27 after the owner asked whether other free sources can cover
+seasons StatsBomb Open Data does not. Findings, ordered by how safe they are to
+use:
+
+### 6a. Free event data with a CLEAN licence — take these
+
+| Source | What / coverage | Licence | Verdict |
+|---|---|---|---|
+| **StatsBomb Open Data — the recent men's league-seasons** | We were under-counting our own primary source. It **does** include **1. Bundesliga 2023/24 (+ 360)**, **Ligue 1 2022/23 & 2021/22 (+ 360)**, **MLS 2023 (+ 360)** — full events *and* freeze-frame tracking | StatsBomb open (non-commercial, attribution) | **Adopt.** This already gives "recent European big-league" event + 360 data for Germany and France. The true gap is only **recent Premier League and recent La Liga** (2021+). |
+| **openfootball / football.db** | Match results, fixtures, squads, in plain-text/JSON; many leagues incl. current seasons | **Public Domain (CC0)** | **Adopt as a results backup.** Cleanest licence of anything here. Results only — no stats, no events. |
+| **ClubElo** (clubelo.com) | Daily Elo ratings for ~500 European clubs, full history to now, CSV + simple HTTP API | Free for **non-commercial** use with attribution; no scraping needed (official endpoint) | **Adopt.** Excellent ready-made strength feature for match prediction; removes the need to compute our own Elo. |
+| **Football-Data.org API** | Fixtures, results, standings, scorers, some lineups; ~12 competitions | Free tier (API key, 10 req/min); free tier is non-commercial | **Optional.** Handy to keep results current without re-downloading CSVs. |
+| **Fantasy Premier League API** | Per-gameweek per-player: points, minutes, xG/xA-style ICT, BPS, price, ownership, fixtures — **current PL season, full history back to 2016/17** | Public JSON, **no key, no auth**; unofficial but openly used | **Adopt for a PL-specific module.** This is the one genuinely rich, current, free, licence-clean Premier League player dataset. Not event-level, but strong per-player form data. |
+
+### 6b. Scraped data — usable for a non-commercial student project, with care
+
+| Source | What / coverage | Licence reality | Verdict |
+|---|---|---|---|
+| **understat** (via `soccerdata` or `understatapi`) | **Shot-level** data: x/y, xG, situation, body part; Big-5 + Russian PL; **2014/15 → 2024/25**; plus per-match xG/PPDA and player/team aggregates | No licence. Site ToS discourage scraping. Data ultimately Opta-derived. | **Conditional (owner decision P7).** Cache-only, never redistribute the raw scrape, polite rate limit, attribute. Gives recent xG + shot maps + finishing profiles for PL & La Liga. **Shots only — no passes/carries/pressures.** |
+| **WhoScored** (via `soccerdata`, `whoscraped`, or custom) | **Full Opta event stream** — passes, touches, tackles, shots, all with locations; convertible to SPADL; Big-5 + ~15 leagues; recent seasons incl. **2024/25** | **WhoScored ToS explicitly prohibit scraping**; data is Opta-licensed; redistribution is a clear violation. Widely used in academia/hobby but the **highest legal risk** here. | **Not recommended.** Only path to recent *full* event data for free, but the licence position is bad. If ever used: private, non-commercial, no redistribution, and documented as a known risk. Prefer to **not build a public portfolio piece on this.** |
+| **Sofascore** (via `soccerdata`) | Match stats, lineups, player ratings, momentum graph, some incidents | Scrape; ToS restrict; rate-limited hard | **Optional, low priority.** Useful for lineups / ratings, not a core event source. |
+| **FBref match logs** (via `soccerdata`) | Per-match basic team/player logs, basic shooting | Scrape; post-Jan-2026 **basic only** | **Optional.** Historical context; no advanced metrics anymore (see §2). |
+
+### 6c. Convenience repackages (Kaggle)
+
+| Source | What | Verdict |
+|---|---|---|
+| **"Club Football Match Data (2000–2025)"** (Kaggle, `adamgbor`) | football-data.co.uk results + ClubElo, **42 leagues, updated to 2024/25, refreshed ~monthly** | **Good time-saver** for the match-prediction dataset — it is exactly our SECONDARY sources pre-joined. Licence inherits football-data.co.uk (informal). Verify freshness before each use. |
+| Various "EPL match data 2000–2025", "Top-5 leagues 2024/25" sets | Results + basic stats | Redundant with the above; skip. |
+
+### 6d. Free tracking data (for the CV / tactical phase)
+
+Metrica (3 matches), SkillCorner Open Data (~10+), Last Row (a few goals),
+Signality / Allsvenskan sample, SoccerTrack, IDSSE/DFL (7). All small,
+research-licensed. Enough to *learn* tracking methods, not to model at scale.
+Already covered in §4 and [cv_strategy.md](cv_strategy.md).
+
+### Bottom line
+
+- **"Recent European big-league" event data** → partly solved for free & clean:
+  StatsBomb has **Bundesliga 2023/24** and **Ligue 1 2021/22–2022/23** with 360.
+- **Recent Premier League** → best licence-clean option is the **FPL API**
+  (rich per-player form, not events) + **football-data.co.uk / ClubElo** (results
+  + strength). Full event data only via understat (shots, grey) or WhoScored
+  (everything, bad licence).
+- **Recent La Liga** → same as PL, minus FPL. understat shots (grey) or wait.
+- **Match prediction** → fully solved: football-data.co.uk + ClubElo +
+  openfootball, all current, all acceptable licences.
+
+---
+
 ## Summary of legal posture
 
 | Source | Commercial use | Attribution | Redistribute raw? | Our use |
@@ -261,3 +314,11 @@ switch the event core to the **CC-BY Wyscout** dataset (and/or license data).
 - [withqwerty/open-football — curated map of open football data](https://github.com/withqwerty/open-football)
 - [Liam Henshaw — where to find football data in 2026](https://www.liamhenshaw.com/writing/where-to-find-football-data)
 - [Pappalardo et al. — public soccer event dataset (Wyscout), figshare/Nature Scientific Data](https://www.nature.com/articles/s41597-019-0247-7)
+- [probberechts/soccerdata — scrapers for ClubElo, ESPN, FBref, football-data.co.uk, Sofascore, SoFIFA, Understat, WhoScored](https://github.com/probberechts/soccerdata)
+- [soccerdata — WhoScored data source docs](https://soccerdata.readthedocs.io/en/latest/datasources/WhoScored.html)
+- [Kaggle — Club Football Match Data (2000–2025), football-data.co.uk + ClubElo](https://www.kaggle.com/datasets/adamgbor/club-football-match-data-2000-2025)
+- [Kaggle — Understat data 2014/15–2024/25](https://www.kaggle.com/datasets/codytipton/understat-data)
+- [OriginalXG — the best free football data sources for analysis](https://originalxg.com/blog/free-football-data-sources/)
+- [TheStatsAPI — best free football APIs in 2026](https://www.thestatsapi.com/blog/free-football-api-alternatives)
+- [ClubElo](http://clubelo.com/API)
+- [openfootball / football.db](https://github.com/openfootball)

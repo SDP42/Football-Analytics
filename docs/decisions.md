@@ -290,6 +290,47 @@ Consequences:
 
 ---
 
+### 0015 — Additional free sources for recent seasons (research follow-up)
+Date: 2026-08-27
+Status: accepted
+Trigger: owner asked to search for other free sources covering seasons StatsBomb
+Open Data lacks. Full findings in
+[dataset_research.md §6](dataset_research.md#6-options-for-recent-season-data--closing-the-pl--la-liga-2021-gap).
+
+Decision — add to the stack:
+- **StatsBomb Open Data recent men's league-seasons** we had under-counted:
+  **1. Bundesliga 2023/24 (+360)** and **Ligue 1 2021/22 & 2022/23 (+360)**.
+  Ingest these — they give recent European big-league event + tracking data for
+  free with a clean licence. (Updates 0013's competition list.)
+- **ClubElo** — official CSV/HTTP endpoint, free non-commercial + attribution.
+  Use as the team-strength feature for match prediction instead of hand-rolling
+  Elo.
+- **openfootball / football.db** — CC0 (public domain). Results/fixtures backup.
+- **Fantasy Premier League API** — free, no auth. Adopt for a **PL-specific
+  player-form module** (rich per-gameweek per-player data; the only clean, current
+  Premier League player dataset).
+- **Kaggle "Club Football Match Data (2000–2025)"** — pre-joined
+  football-data.co.uk + ClubElo, 42 leagues, refreshed monthly. Use as a
+  convenience input for the match-prediction dataset (verify freshness per use).
+
+Decision — do NOT adopt:
+- **WhoScored scraping** — it is the only free route to recent *full* event data
+  (passes, carries, etc. via Opta), but its ToS explicitly forbid scraping and
+  the data is Opta-licensed. Too risky for a public portfolio project. Recorded
+  as a known option we are deliberately declining.
+- **Sofascore / FBref match-log scraping** — optional, low priority; not core.
+
+Consequences:
+- "Recent European big-league" event analytics is now partly covered free & clean
+  (Germany, France via StatsBomb 360).
+- Recent **Premier League** deep analytics still limited to: FPL form data +
+  results/Elo, or understat shots (P7, grey). Recent **La Liga** deep analytics:
+  understat shots (P7) or wait.
+- New optional dependency surface: `soccerdata` (for ClubElo/understat),
+  the FPL JSON API. Each justified when first used.
+
+---
+
 ## Pending decisions (to resolve with the owner)
 
 - **P3 (partly open)** — Exact La Liga season range to ingest first (all

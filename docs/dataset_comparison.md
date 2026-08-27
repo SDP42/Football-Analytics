@@ -85,14 +85,28 @@ SECONDARY:   football-data.co.uk        (match results + bookmaker odds history)
              - powers: historical context, squad minutes, older seasons
              - DO NOT depend on advanced (Opta) columns - removed Jan 2026
 
+ADD (free, clean licence - see decisions.md #0015):
+             StatsBomb recent seasons        - Bundesliga 2023/24 (+360),
+                                               Ligue 1 2021/22 & 2022/23 (+360)
+             ClubElo                         - team-strength feature for match
+                                               prediction (official endpoint)
+             openfootball / football.db      - CC0 results/fixtures backup
+             FPL API                         - recent Premier League player-form
+                                               module (only clean current PL data)
+             Kaggle "Club Football Match
+             Data 2000-2025"                 - pre-joined football-data + ClubElo
+
 OPTIONAL:    Wyscout public dataset (CC-BY)  - commercial-safe event fallback,
                                                extra leagues (2017/18)
-             understat (scrape, cache-only)  - continuous shot/xG history IF a
-                                               feature needs it
+             understat (scrape, cache-only)  - recent shot/xG history (PL, La Liga)
+                                               IF owner approves P7 (grey licence)
              transfermarkt mirror (Kaggle)   - market value / age / injuries for
                                                scouting metadata (Phase 2)
-             FPL API                         - standalone fantasy module
              Kaggle European Soccer DB       - extra 2008-2016 match-prediction data
+
+DECLINED:    WhoScored scraping              - only free route to recent FULL
+                                               event data, but ToS forbid it and
+                                               data is Opta-licensed (#0015)
 
 CV (Phase 4): SoccerNet          - detection, tracking, calibration, action spotting
              Metrica sample data - learn tracking analytics on 3 clean matches
