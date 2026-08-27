@@ -10,13 +10,18 @@ Run:  python scripts/build_inventory.py
 
 from __future__ import annotations
 
+import io
 import json
+import sys
 from datetime import date
 from pathlib import Path
 
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+from src.data.fetching import read_maybe_gz  # noqa: E402
+
 RAW = REPO_ROOT / "data" / "raw"
 OUT = REPO_ROOT / "docs" / "data_inventory.md"
 
@@ -39,15 +44,22 @@ def statsbomb_detail() -> list[str]:
     if not d.exists():
         return ["_not collected_"]
     comps = {c["competition_id"]: c for c in
-             json.loads((d / "competitions.json").read_bytes())}
+             json.loads(read_maybe_gz(d / "competitions.json"))}
     lines = ["| Competition | Season | Matches | Events files | 360 files |",
              "|---|---|--:|--:|--:|"]
-    event_ids = {p.stem for p in (d / "events").glob("*.json")} if (d / "events").exists() else set()
-    threesixty_ids = {p.stem for p in (d / "three-sixty").glob("*.json")} if (d / "three-sixty").exists() else set()
+
+    def id_set(sub: str) -> set[str]:
+        p = d / sub
+        if not p.exists():
+            return set()
+        return {f.name.split(".")[0] for f in p.glob("*.json*")}
+
+    event_ids = id_set("events")
+    threesixty_ids = id_set("three-sixty")
     total_m = total_e = total_3 = 0
-    for mfile in sorted((d / "matches").rglob("*.json")):
+    for mfile in sorted((d / "matches").rglob("*.json*")):
         cid = int(mfile.parent.name)
-        matches = json.loads(mfile.read_bytes())
+        matches = json.loads(read_maybe_gz(mfile))
         ids = [str(m["match_id"]) for m in matches]
         n_e = sum(i in event_ids for i in ids)
         n_3 = sum(i in threesixty_ids for i in ids)

@@ -20,6 +20,7 @@ Only the Python standard library + `requests` (already in the base env) is used.
 from __future__ import annotations
 
 import csv
+import gzip
 import hashlib
 import time
 import random
@@ -65,12 +66,17 @@ class CachedFetcher:
         (cache hits do not count). #0016 rule 2 requires >= 3.0 for understat.
     """
 
-    def __init__(self, source_dir: Path, mode: str = "bulk", min_delay: float = 3.0):
+    def __init__(self, source_dir: Path, mode: str = "bulk", min_delay: float = 3.0,
+                 compress: bool = False):
         assert mode in {"bulk", "polite"}
         self.source_dir = Path(source_dir)
         self.source_dir.mkdir(parents=True, exist_ok=True)
         self.mode = mode
         self.min_delay = min_delay
+        # When True, text responses are stored gzip-compressed at "<rel_path>.gz".
+        # StatsBomb/understat JSON/HTML shrink ~8-10x. Downstream readers must use
+        # gzip.open() for ".gz" files (helper: src.data.fetching.read_maybe_gz).
+        self.compress = compress
         self.manifest_path = self.source_dir / "manifest.csv"
         self._last_request_ts = 0.0
         self._robots: dict[str, robotparser.RobotFileParser] = {}
@@ -133,11 +139,17 @@ class CachedFetcher:
         can decide whether to abort the whole run (#0016 rule 6).
         """
         dest = self.source_dir / rel_path
-        if dest.exists():  # idempotency: never re-download
-            raw = dest.read_bytes()
-            res = FetchResult(url, dest, 200, len(raw), _sha256(raw), from_cache=True)
-            self._log(res)
-            return res
+        gz_dest = dest.with_name(dest.name + ".gz")
+        store = gz_dest if self.compress else dest
+
+        # idempotency: never re-download. Accept either an uncompressed file from
+        # an earlier run or the compressed one.
+        for existing in (store, dest, gz_dest):
+            if existing.exists():
+                raw = _read_bytes(existing)
+                res = FetchResult(url, existing, 200, len(raw), _sha256(raw), from_cache=True)
+                self._log(res)
+                return res
 
         if not self._allowed_by_robots(url):
             raise PermissionError(f"robots.txt disallows fetching {url}")
@@ -151,8 +163,12 @@ class CachedFetcher:
                 resp = self._session.get(url, timeout=60)
                 if resp.status_code == 200:
                     raw = resp.content
-                    dest.write_bytes(raw)
-                    res = FetchResult(url, dest, 200, len(raw), _sha256(raw), from_cache=False)
+                    if self.compress:
+                        with gzip.open(store, "wb") as fh:
+                            fh.write(raw)
+                    else:
+                        store.write_bytes(raw)
+                    res = FetchResult(url, store, 200, len(raw), _sha256(raw), from_cache=False)
                     self._log(res)
                     return res
                 if resp.status_code in (429, 500, 502, 503, 504):
@@ -170,5 +186,44 @@ class CachedFetcher:
         raise RuntimeError(f"Failed after {max_retries} attempts: {url}") from last_err
 
 
+def free_mb(path: Path | str = ".") -> float:
+    """Megabytes free on the filesystem holding `path`."""
+    import shutil as _sh
+
+    return _sh.disk_usage(Path(path)).free / 1e6
+
+
+def require_free_mb(minimum: float, path: Path | str = ".") -> None:
+    """Abort early if disk headroom is below `minimum` MB (learned the hard way)."""
+    have = free_mb(path)
+    if have < minimum:
+        raise RuntimeError(
+            f"Only {have:.0f} MB free at {path!s}; need >= {minimum:.0f} MB. Aborting."
+        )
+
+
 def _sha256(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
+
+
+def _read_bytes(path: Path) -> bytes:
+    if path.suffix == ".gz":
+        with gzip.open(path, "rb") as fh:
+            return fh.read()
+    return path.read_bytes()
+
+
+def read_maybe_gz(path: Path | str) -> bytes:
+    """Read a raw file whether it is stored plain or gzip-compressed.
+
+    Downstream parsing code should use this instead of Path.read_bytes() so it
+    works regardless of the fetcher's `compress` setting. Pass either the plain
+    path (``events/123.json``) or the ``.gz`` path — both resolve.
+    """
+    p = Path(path)
+    if p.exists():
+        return _read_bytes(p)
+    gz = p.with_name(p.name + ".gz")
+    if gz.exists():
+        return _read_bytes(gz)
+    raise FileNotFoundError(p)

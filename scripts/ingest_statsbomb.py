@@ -37,7 +37,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
-from src.data.fetching import CachedFetcher  # noqa: E402
+from src.data.fetching import CachedFetcher, read_maybe_gz, require_free_mb  # noqa: E402
 
 BASE = "https://raw.githubusercontent.com/statsbomb/open-data/master/data"
 RAW_DIR = REPO_ROOT / "data" / "raw" / "statsbomb"
@@ -51,7 +51,7 @@ def load_targets() -> dict:
 
 def resolve_comp_seasons(fetcher: CachedFetcher, targets: dict) -> list[dict]:
     """Turn the config into a concrete list of {competition_id, season_id, ...}."""
-    comps = json.loads(fetcher.get(f"{BASE}/competitions.json", "competitions.json").path.read_bytes())
+    comps = json.loads(read_maybe_gz(fetcher.get(f"{BASE}/competitions.json", "competitions.json").path))
     wanted = []
     for entry in targets["competitions"]:
         cid = entry["competition_id"]
@@ -71,8 +71,11 @@ def want_360(targets: dict, comp_season: dict) -> bool:
 
 
 def main() -> None:
+    require_free_mb(1500, RAW_DIR)  # raw is gzip-compressed but still leave headroom
     targets = load_targets()
-    fetcher = CachedFetcher(RAW_DIR, mode="bulk")
+    # compress=True: store JSON as .json.gz (~9x smaller). Downstream parsing uses
+    # src.data.fetching.read_maybe_gz().
+    fetcher = CachedFetcher(RAW_DIR, mode="bulk", compress=True)
 
     comp_seasons = resolve_comp_seasons(fetcher, targets)
     print(f"{len(comp_seasons)} competition-seasons selected")
@@ -83,7 +86,7 @@ def main() -> None:
     for cs in comp_seasons:
         cid, sid = cs["competition_id"], cs["season_id"]
         mfile = fetcher.get(f"{BASE}/matches/{cid}/{sid}.json", f"matches/{cid}/{sid}.json")
-        matches = json.loads(mfile.path.read_bytes())
+        matches = json.loads(read_maybe_gz(mfile.path))
         ids = [m["match_id"] for m in matches]
         match_ids.extend(ids)
         if want_360(targets, cs):
